@@ -1,0 +1,81 @@
+function handles = display_discharge_summary(handles)
+
+currentID = handles.currentID ;
+
+expertNum = length(get(handles.expert,'String'));
+expertNo = get(handles.expert,'Value');
+expertToDo = expertNo:expertNum:length(handles.results.isDone);
+
+if ~get(handles.checkbox1,'Value') 
+    %% Already reviewed items are NOT displayed
+    
+    NotDoneIdx = find(handles.results.isDone==0);
+    NotDoneIdxAboveCurr = NotDoneIdx(NotDoneIdx>=currentID);
+    
+    currentID = min( intersect(NotDoneIdxAboveCurr,expertToDo) ); 
+    
+    if isempty(currentID)
+        warndlg(['There is no discharge summary left for you...'...
+            'You are simply awesome! ']);
+    end
+    
+
+else
+    %% Already reviewed items are displayed
+    currentID = expertToDo(find(expertToDo>=currentID, 1) );
+ 
+end
+
+% Set Dislpay pre-identified CHI 
+set(handles.gui_aids,'Value', handles.results.aids_pre(currentID) || handles.results.aids(currentID) );
+set(handles.gui_hepfail,'Value',handles.results.hepfail_pre(currentID)  || handles.results.hepfail(currentID) );
+set(handles.gui_lymph,'Value',handles.results.lymph_pre(currentID)  || handles.results.lymph(currentID));
+set(handles.gui_metcan,'Value',handles.results.metcan_pre(currentID)  || handles.results.metcan(currentID));
+set(handles.gui_leuk,'Value',handles.results.leuk_pre(currentID)  || handles.results.leuk(currentID));
+set(handles.gui_immunosup,'Value',handles.results.immunosup_pre(currentID)  || handles.results.immunosup(currentID));
+set(handles.gui_cirrhosis,'Value',handles.results.cirrhosis_pre(currentID)  || handles.results.cirrhosis(currentID));
+set(handles.gui_admission,'Value',handles.results.admission_pre(currentID)  || handles.results.admission(currentID));
+set(handles.gui_vent,'Value',handles.results.vent_pre(currentID) || handles.results.vent(currentID));
+
+% Process discharge summary for each Chronic Health
+chi = {'aids','hepfail','lymph','metcan','leuk','immunosup','cirrhosis','vent'};
+for ch = chi
+    eval(['[pch , extracts] = find_chronic_health_from_ds(''' ch{:} ''',handles.dischSum{currentID});']);
+    eval(['handles.results.extracts_' ch{:} '{currentID} = extracts;']); % Save extracts
+    % Dislpay extracts or empty popoup if nothing found 
+    if pch % if chi was found in DS    
+        eval(['set(handles.pop_' ch{:} ',''String'',extracts,''Enable'',''on'');']);
+        eval(['s = handles.results.' ch{:} '_pre(currentID);']); % Get pre-identified setting setting
+        eval(['set(handles.gui_' ch{:} ',''Value'', pch );']); % upudate the field
+            if s % if chi was correctly pre-allocated
+                 % change to green to indicate good correlation with DS
+                eval(['set(handles.gui_' ch{:} ',''ForeGroundColor'', [.3 .5 .3] );']);
+            else
+                % change to red to indicate difference with DS
+                eval(['set(handles.gui_' ch{:} ',''ForeGroundColor'', [.5 .3 .3] );']); 
+            end
+    else % positive was not found in DS
+        eval(['set(handles.pop_' ch{:} ',''String'',{''None''},''Enable'',''off'');']);
+        eval(['set(handles.gui_' ch{:} ',''ForeGroundColor'', [0 0 0] );']); % change to black
+    end
+end
+
+% Show the discharge summary
+if ~isempty(currentID)
+    set(handles.edit1,'String',handles.dischSum{currentID});
+    set(handles.gui_icustay_id,'String',handles.hadm_id(currentID));
+    progress_str = [num2str(currentID) '/' num2str(length(handles.results.isDone))];
+    set(handles.progress,'String',progress_str);    
+else
+    set(handles.edit1,'Good job! Don''t forget to save your work!');
+end
+
+handles.currentID = currentID;
+
+
+
+
+
+
+
+
