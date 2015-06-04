@@ -1,0 +1,1 @@
+The tool is designed for Mimic 2 database, that hosts clinical data from ICU: see mimic.physionet.org
